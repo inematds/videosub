@@ -1,0 +1,23 @@
+{
+  "name": "videosub-local",
+  "private": true,
+  "version": "1.03.04",
+  "packageManager": "pnpm@10.22.0",
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,magenta \"pnpm --filter @videosub/server dev\" \"pnpm --filter @videosub/web dev\"",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "start": "pnpm --filter @videosub/server start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3",
+      "esbuild",
+      "sharp"
+    ]
+  }
+}

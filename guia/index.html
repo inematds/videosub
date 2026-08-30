@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VideoSub — Conteúdo em vídeo, etapa por etapa</title>
+<meta name="description" content="Sistema local que transforma um tema ou conteúdo em roteiro, voz, imagens, animações, legendas e vídeo MP4 com validação por etapa.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0c0c10;--bg2:#14141b;--card:#16161e;--line:#272730;--txt:#e9e9ee;--mut:#9a9aa6;--amb:#E2A23B;--amb2:#f0c070;--sky:#38bdf8;--pro:#cbd5e1;color-scheme:dark}
+  body.light{--bg:#f6f7f9;--bg2:#eceef2;--card:#fff;--line:#e1e3ea;--txt:#1a1a22;--mut:#5b5b68;--amb:#b9791d;--amb2:#a16207;--sky:#0369a1;--pro:#b45309;color-scheme:light}
+  body.light .hero .glow{opacity:.5}body.light pre{background:#0e0e14;color:#d6d6e0}body.light pre .c{color:#8a8a98}
+  *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--txt);font:16px/1.65 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  h1,h2,h3{font-family:Sora,sans-serif;line-height:1.15;margin:0}a{color:var(--amb);text-decoration:none}code,pre{font-family:"JetBrains Mono",monospace}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 22px}.mut{color:var(--mut)}.amb{color:var(--amb)}.chip{display:inline-block;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amb);font-weight:600;font-family:Sora}
+  nav{position:sticky;top:0;z-index:30;backdrop-filter:blur(12px);background:rgba(12,12,16,.78);border-bottom:1px solid var(--line)}nav .wrap{display:flex;align-items:center;gap:22px;height:60px}
+  nav .brand{display:flex;align-items:center;gap:8px;font-family:Sora;font-weight:800;letter-spacing:-.02em;color:var(--amb)}nav .brand .emoji{font-size:1.25rem}nav .sep{color:var(--mut);opacity:.45}
+  nav .inema{color:var(--sky);font-weight:600;font-size:.88rem;font-family:Sora}nav .inema:hover{filter:brightness(1.15)}nav .pro{color:var(--pro);font-weight:600;font-size:.88rem;font-family:Sora}nav .pro:hover{filter:brightness(1.15)}nav .clubpro{display:inline-flex;align-items:center;gap:6px}
+  nav .links{margin-left:auto;display:flex;align-items:center;gap:20px;font-size:.92rem}nav .links a.sec{color:var(--mut)}nav .links a.sec:hover{color:var(--txt)}
+  .tgl{background:var(--bg2);border:1px solid var(--line);color:var(--txt);width:38px;height:38px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:1.05rem}.tgl:hover{border-color:var(--amb)}
+  .btn{display:inline-block;background:var(--amb);color:#1a1206;font-weight:600;padding:.6em 1.05em;border-radius:10px;font-family:Sora}.btn.ghost{background:transparent;color:var(--txt);border:1px solid var(--line)}
+  @media(max-width:760px){nav .links a.sec{display:none}}
+  .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}.hero .glow{position:absolute;inset:-40% -20% auto auto;width:70%;height:600px;background:radial-gradient(closest-side,rgba(226,162,59,.22),transparent 70%);pointer-events:none}
+  .hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:74px 22px}.hero h1{font-size:clamp(2.2rem,5vw,3.5rem);font-weight:800;letter-spacing:-.025em}.hero p.lead{font-size:1.18rem;color:var(--mut);margin:1.1em 0 1.6em;max-width:34ch}.hero .cta{display:flex;gap:12px;flex-wrap:wrap}.hero figure{margin:0;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 30px 80px -30px #000}.hero figure img{width:100%;display:block}@media(max-width:780px){.hero .wrap{grid-template-columns:1fr;padding:48px 22px}}
+  section{padding:62px 0;border-bottom:1px solid var(--line)}section h2{font-size:clamp(1.5rem,3.4vw,2.1rem);font-weight:800;letter-spacing:-.02em}section .sub{color:var(--mut);margin:.6em 0 2em;max-width:62ch}
+  .grid{display:grid;gap:16px}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g2{grid-template-columns:repeat(2,1fr)}@media(max-width:820px){.g3,.g4{grid-template-columns:1fr 1fr}}@media(max-width:540px){.g2,.g3,.g4{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px}.card h3{font-size:1.05rem;margin-bottom:.4em}.card p{color:var(--mut);font-size:.92rem;margin:0}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}.flow span{background:var(--bg2);border:1px solid var(--line);border-radius:999px;padding:.45em .9em;font-size:.85rem;font-family:Sora;font-weight:600}.flow .arr{color:var(--amb);border:none;background:none;padding:0 .1em}
+  pre{background:#0a0a0e;border:1px solid var(--line);border-radius:12px;padding:16px 18px;overflow:auto;font-size:.86rem;line-height:1.6;color:#d6d6e0}pre .c{color:#6f6f7c}pre .k{color:var(--amb2)}pre .s{color:#9ece6a}
+  .step{display:grid;grid-template-columns:46px 1fr;gap:16px;margin-bottom:26px}.step .b{width:46px;height:46px;border-radius:12px;background:var(--amb);color:#1a1206;font-family:Sora;font-weight:800;font-size:1.25rem;display:flex;align-items:center;justify-content:center}.step h3{font-size:1.12rem;margin-bottom:.3em}.step p{color:var(--mut);margin:.2em 0 .7em}
+  .ex{display:grid;grid-template-columns:1fr 1fr;gap:18px}@media(max-width:680px){.ex{grid-template-columns:1fr}}.ex figure{margin:0;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--card)}.ex figure img{width:100%;display:block;max-height:620px;object-fit:contain}.ex figcaption{padding:12px 14px;font-size:.88rem;color:var(--mut);background:var(--card)}
+  .phase{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}.phase:last-child{border:none}.phase .tag{flex:0 0 92px;font-family:Sora;font-weight:800;color:var(--amb)}.phase .d strong{display:block;margin-bottom:.2em}.phase .d span{color:var(--mut);font-size:.92rem}
+  footer{padding:46px 0;text-align:center;color:var(--mut);font-size:.9rem}.pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:.3em .8em;font-size:.78rem;color:var(--mut);margin:0 4px}
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <a class="brand" href="#top"><span class="emoji">🎬</span> VideoSub</a><span class="sep">|</span>
+  <span class="clubpro"><a class="inema" href="https://inema.club" target="_blank" rel="noopener">INEMA.CLUB</a><span class="sep">-</span><a class="pro" href="https://inema.pro" target="_blank" rel="noopener">PRO</a></span>
+  <div class="links"><a class="sec" href="#oque">O que é</a><a class="sec" href="#fluxo">Como funciona</a><a class="sec" href="#guia">Guia de uso</a><a class="sec" href="#exemplos">Exemplos</a><a class="sec" href="#roadmap">Roadmap</a><button class="tgl" id="themeToggle" aria-label="Alternar tema" title="Alternar tema">🌙</button><a class="btn" href="https://github.com/inematds/videosub" target="_blank" rel="noopener">GitHub</a></div>
+</div></nav>
+<header class="hero" id="top"><div class="glow"></div><div class="wrap"><div>
+  <span class="chip">Produção de vídeo com IA · local</span>
+  <h1>Do conteúdo ao <span class="amb">vídeo pronto</span></h1>
+  <p class="lead">Crie roteiro, voz, imagens, animações, legendas e MP4 em um fluxo visual que permite revisar cada etapa.</p>
+  <div class="cta"><a class="btn" href="#guia">Começar o guia</a><a class="btn ghost" href="https://github.com/inematds/videosub" target="_blank" rel="noopener">Ver no GitHub</a></div>
+</div><figure><img src="assets/hero.png" alt="Linha de produção visual conectando cenas de um vídeo"></figure></div></header>
+
+<section id="oque"><div class="wrap"><span class="chip">O que é</span><h2>Um estúdio local e verificável</h2><p class="sub">VideoSub transforma um tema curto ou conteúdo completo em vídeo vertical, quadrado ou horizontal, mantendo o operador no controle do resultado.</p>
+<div class="grid g3"><div class="card"><h3>🧭 Etapas visíveis</h3><p>Roteiro, voz, imagem, movimento, legenda e render aparecem separadamente para revisão.</p></div><div class="card"><h3>🔌 Provedores reais</h3><p>Codex OAuth cria o roteiro, ElevenLabs produz a voz e Agnes gera imagens e vídeos.</p></div><div class="card"><h3>🏠 Execução local</h3><p>Interface e API rodam na máquina, com SQLite para projetos e FFmpeg para a montagem final.</p></div></div></div></section>
+
+<section id="fluxo"><div class="wrap"><span class="chip">Como funciona</span><h2>Uma linha de produção em sete passos</h2><p class="sub">Cada saída é preservada no projeto e pode ser revisada antes da próxima operação.</p><div class="flow"><span>Conteúdo</span><span class="arr">→</span><span>Roteiro</span><span class="arr">→</span><span>Voz</span><span class="arr">→</span><span>Imagens</span><span class="arr">→</span><span>Animação</span><span class="arr">→</span><span>Legendas</span><span class="arr">→</span><span>MP4</span></div></div></section>
+
+<section id="pre"><div class="wrap"><span class="chip">Pré-requisitos</span><h2>O necessário para rodar</h2><p class="sub">A aplicação usa ferramentas locais e credenciais configuradas em arquivo não versionado.</p><div class="grid g3">
+  <div class="card"><h3>Node.js e pnpm</h3><p>Node.js 22 ou superior e pnpm 10.</p><pre><span class="k">node</span> --version
+<span class="k">pnpm</span> --version</pre></div>
+  <div class="card"><h3>FFmpeg</h3><p>FFmpeg e FFprobe disponíveis no PATH, incluindo o filtro subtitles.</p><pre><span class="k">ffmpeg</span> -version
+<span class="k">ffprobe</span> -version</pre></div>
+  <div class="card"><h3>Provedores</h3><p>Codex autenticado e chaves de Agnes e ElevenLabs no ambiente local.</p><pre><span class="k">codex</span> login status
+<span class="c"># configure apps/server/.env</span></pre></div>
+</div></div></section>
+
+<section id="guia"><div class="wrap"><span class="chip">Guia de uso · passo a passo</span><h2>Execute e produza o primeiro vídeo</h2><p class="sub">Os comandos abaixo são os mesmos usados na versão local do projeto.</p>
+  <div class="step"><div class="b">1</div><div><h3>Instale as dependências</h3><p>Na raiz do repositório, instale o workspace.</p><pre><span class="k">pnpm</span> install --frozen-lockfile</pre></div></div>
+  <div class="step"><div class="b">2</div><div><h3>Crie a configuração local</h3><p>Copie o modelo e preencha as credenciais sem versionar o arquivo.</p><pre><span class="k">cp</span> .env.example apps/server/.env
+<span class="k">nano</span> apps/server/.env</pre></div></div>
+  <div class="step"><div class="b">3</div><div><h3>Compile e inicie</h3><p>O script cria o build quando necessário e publica a interface na porta 3333.</p><pre><span class="k">pnpm</span> build
+<span class="k">./start.sh</span>
+<span class="c"># abra http://localhost:3333</span></pre></div></div>
+  <div class="step"><div class="b">4</div><div><h3>Crie um projeto</h3><p>Informe o tema ou conteúdo, escolha formato e estilo e gere o roteiro.</p><pre><span class="s">Tema:</span> explique o que é AGI
+<span class="s">Formato:</span> 9:16
+<span class="s">Estilo:</span> editorial cinematográfico</pre></div></div>
+  <div class="step"><div class="b">5</div><div><h3>Valide cada etapa</h3><p>Gere voz, imagens e animações; revise as cenas e só depois crie legendas e renderize.</p><pre><span class="c"># fluxo na interface</span>
+Roteiro → Voz → Imagens → Animar → Legendas → Renderizar</pre></div></div>
+  <div class="step"><div class="b">6</div><div><h3>Atualize ou encerre</h3><p>Use os scripts operacionais incluídos no repositório.</p><pre><span class="k">./atualiza.sh</span>  <span class="c"># valida, compila e reinicia</span>
+<span class="k">./stop.sh</span>      <span class="c"># encerra o servidor</span></pre></div></div>
+</div></section>
+
+<section id="exemplos"><div class="wrap"><span class="chip">Exemplo real</span><h2>Vídeo explicativo sobre AGI</h2><p class="sub">Quadros do resultado validado ponta a ponta com voz ElevenLabs, imagens e movimento Agnes e montagem local.</p><div class="ex"><figure><img src="assets/ex1.jpg" alt="Cena vertical com cérebro artificial"><figcaption>Abertura cinematográfica gerada para explicar o conceito de AGI.</figcaption></figure><figure><img src="assets/ex2.jpg" alt="Cena vertical sobre impactos da inteligência artificial"><figcaption>Cena final com legenda compacta e composição azul e âmbar.</figcaption></figure></div></div></section>
+
+<section id="roadmap"><div class="wrap"><span class="chip">Roadmap</span><h2>Do MVP ao produto completo</h2><p class="sub">A base atual prioriza produção real e validação local; as próximas fases ampliam operação e acabamento.</p>
+  <div class="phase"><div class="tag">ATUAL</div><div class="d"><strong>Pipeline real local</strong><span>Roteiro, voz, imagens, vídeo, legendas e render final com diagnóstico de provedores.</span></div></div>
+  <div class="phase"><div class="tag">PRÓXIMO</div><div class="d"><strong>Controles criativos</strong><span>Mais estilos, vozes, música com mixagem, templates de legenda e ajustes por cena.</span></div></div>
+  <div class="phase"><div class="tag">FUTURO</div><div class="d"><strong>Operação multiusuário</strong><span>Autenticação, fila de trabalhos, armazenamento externo, publicação e acompanhamento de custos.</span></div></div>
+</div></section>
+
+<footer><div class="wrap"><div class="pill">React</div><div class="pill">Fastify</div><div class="pill">SQLite</div><div class="pill">FFmpeg</div><p style="margin-top:18px">VideoSub · versão v1.03.04 · <a href="https://github.com/inematds/videosub">inematds/videosub</a> · <a href="https://inema.club">INEMA.CLUB</a></p></div></footer>
+<script>(function(){var KEY='videosub-theme',b=document.body,t=document.getElementById('themeToggle');if(localStorage.getItem(KEY)==='light'){b.classList.add('light');t.textContent='☀️'}t.addEventListener('click',function(){var light=b.classList.toggle('light');t.textContent=light?'☀️':'🌙';localStorage.setItem(KEY,light?'light':'dark')})})();</script>
+</body>
+</html>
