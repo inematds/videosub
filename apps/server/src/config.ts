@@ -1,11 +1,22 @@
 import "dotenv/config";
+import fs from "node:fs";
 import path from "node:path";
+import { parse } from "dotenv";
 
 const workspaceRoot = path.resolve(process.cwd(), process.cwd().endsWith("apps/server") ? "../.." : ".");
 const resolveData = (value: string) => path.resolve(workspaceRoot, value);
 const defaultDataDir = process.env.NODE_ENV === "test" ? `/tmp/videosub-tests-${process.pid}` : "./data";
 const isTest = process.env.NODE_ENV === "test";
 const providerMode = (name: string, realProvider: string) => isTest ? "mock" : (process.env[name] ?? realProvider);
+const agnesTokenSlot = Math.max(1, Number(process.env.AGNES_TOKEN_SLOT ?? 1));
+const agnesTokenFile = process.env.AGNES_TOKEN_FILE;
+let agnesTokenEnv: Record<string, string> = {};
+if (agnesTokenFile) {
+  try { agnesTokenEnv = parse(fs.readFileSync(agnesTokenFile)); }
+  catch { agnesTokenEnv = {}; }
+}
+const agnesTokenName = agnesTokenSlot === 1 ? "AGNES_API_KEY" : `AGNES_API_KEY_${agnesTokenSlot}`;
+const selectedAgnesKey = agnesTokenEnv[agnesTokenName] ?? process.env[agnesTokenName] ?? process.env.AGNES_API_KEY ?? "";
 
 export const config = {
   port: Number(process.env.PORT ?? 3333),
@@ -21,13 +32,17 @@ export const config = {
   },
   codexModel: process.env.CODEX_MODEL || undefined,
   agnes: {
-    apiKey: process.env.AGNES_API_KEY ?? "",
+    apiKey: selectedAgnesKey,
+    tokenSlot: agnesTokenSlot,
+    tokenSource: agnesTokenFile ? "arquivo externo" : "ambiente do servidor",
     // Aceita tanto a raiz do serviço quanto a variante já terminada em /v1.
     baseUrl: (process.env.AGNES_BASE_URL ?? "https://apihub.agnes-ai.com")
       .replace(/\/v1\/?$/, "")
       .replace(/\/+$/, ""),
     imageModel: process.env.AGNES_IMAGE_MODEL ?? "agnes-image-2.1-flash",
-    videoModel: process.env.AGNES_VIDEO_MODEL ?? "agnes-video-v2.0"
+    videoModel: process.env.AGNES_VIDEO_MODEL ?? "agnes-video-2.5-flash",
+    maxClipsPerScene: Math.max(1, Number(process.env.AGNES_MAX_CLIPS_PER_SCENE ?? 4)),
+    videoSeconds: Math.min(12, Math.max(4, Number(process.env.AGNES_VIDEO_SECONDS ?? 8)))
   },
   elevenLabs: {
     apiKey: process.env.ELEVENLABS_API_KEY ?? "",

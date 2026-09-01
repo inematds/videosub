@@ -62,6 +62,8 @@ As variáveis disponíveis estão documentadas em [`.env.example`](./.env.exampl
 - `CODEX_PATH` e `CODEX_MODEL`: executável e modelo opcionais do Codex;
 - `AGNES_*` e `ELEVENLABS_*`: credenciais e modelos dos provedores reais.
 
+O perfil recomendado de vídeo é `agnes-video-2.5-flash`. Ele trabalha com clipes de 4–12 segundos; o VideoSub usa a duração real da voz para decidir automaticamente quantos clipes gerar por cena. A interface também aceita música local, volumes separados e edição do roteiro por prompt.
+
 Os projetos ficam em `data/videosub.db` e as mídias em `data/projects/<id>/`. O diretório inteiro é ignorado pelo Git.
 
 Consulte [a documentação do projeto](./docs/README.md), [os provedores previstos](./docs/PROVEDORES-E-FERRAMENTAS-v1.01.00.md) e [o sistema visual](./DESIGN.md).
