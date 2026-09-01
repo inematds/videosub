@@ -1,7 +1,7 @@
 {
   "name": "videosub-local",
   "private": true,
-  "version": "1.08.01",
+  "version": "1.09.00",
   "packageManager": "pnpm@10.22.0",
   "scripts": {
     "dev": "concurrently -n api,web -c blue,magenta \"pnpm --filter @videosub/server dev\" \"pnpm --filter @videosub/web dev\"",

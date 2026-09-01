@@ -1,7 +1,7 @@
 {
   "name": "@videosub/server",
   "private": true,
-  "version": "1.08.01",
+  "version": "1.09.00",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",

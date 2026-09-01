@@ -114,7 +114,7 @@ function NewProject({ onCreate, onCancel, canCancel, externalError }: { onCreate
       <label>Título do projeto<input autoFocus value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Ex.: Como funciona a energia solar" required /></label>
       <label>Conteúdo<textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder="Cole aqui seu artigo, briefing, aula ou roteiro bruto..." minLength={20} required /></label>
       <div className="form-row">
-        <label>Formato<select value={format} onChange={(event) => setFormat(event.target.value as typeof format)}><option value="16:9">Horizontal 16:9 · YouTube</option><option value="9:16">Vertical 9:16 · Reels/TikTok</option><option value="1:1">Quadrado 1:1</option></select></label>
+        <label>Formato<select value={format} onChange={(event) => setFormat(event.target.value as typeof format)}><option value="16:9">Horizontal 16:9 · YouTube</option><option value="9:16">Vertical 9:16 · texto + mídia 1:1</option><option value="1:1">Quadrado 1:1</option></select>{format === "9:16" && <small className="format-help">Texto no topo; imagem ou vídeo quadrado na parte inferior.</small>}</label>
         <label>Estilo visual<input value={style} onChange={(event) => setStyle(event.target.value)} /></label>
       </div>
       <label className="check-line"><input type="checkbox" checked={animate} onChange={(event) => setAnimate(event.target.checked)} /><span><strong>Animar os quadros com Agnes Video</strong><small>Opcional — imagens estáticas já produzem um MP4 completo.</small></span></label>
@@ -135,6 +135,7 @@ function Inspector({ project, scene, onSave, onRegenerate, onVoice, onStoryboard
   const selectedClip = scene?.clips.find((clip) => clip.id === selectedClipId);
   const monitorVideo = selectedClip?.videoUrl ?? previewUrl ?? scene?.videoUrl;
   const monitorImage = selectedClip?.imageUrl ?? scene?.imageUrl;
+  const previewsRawSquare = project.settings.format === "9:16" && !previewUrl;
   const readyClips = scene?.clips.filter((clip) => clip.videoUrl) ?? [];
   const framedClips = scene?.clips.filter((clip) => clip.imageUrl) ?? [];
   const allClipsReady = Boolean(scene?.clips.length && readyClips.length === scene.clips.length);
@@ -145,7 +146,8 @@ function Inspector({ project, scene, onSave, onRegenerate, onVoice, onStoryboard
       <button className={!selectedClipId && previewUrl ? "active" : ""} disabled={!canPreview || busy || previewBusy} onClick={async () => { setPreviewBusy(true); try { setPreviewUrl(await onPreview()); setSelectedClipId(undefined); } catch { /* O painel principal apresenta o erro retornado pela API. */ } finally { setPreviewBusy(false); } }}>{previewBusy ? <LoaderCircle className="spin" size={13} /> : <Clapperboard size={13} />} Cena completa</button>
       {framedClips.map((clip) => <button key={clip.id} className={selectedClipId === clip.id ? "active" : ""} aria-pressed={selectedClipId === clip.id} onClick={() => { setSelectedClipId(clip.id); setPreviewUrl(undefined); }}>{clip.videoUrl ? <Play size={12} /> : <Image size={12} />} Plano {clip.position + 1}</button>)}
     </div>}
-    <div className={`monitor ${project.settings.format.replace(":", "-")}`}>
+    <div className={`monitor ${project.settings.format.replace(":", "-")} ${previewsRawSquare ? "raw-square" : ""}`}>
+      {previewsRawSquare && (monitorVideo || monitorImage) && <span className="monitor-text-zone">Área reservada para texto e legendas</span>}
       {monitorVideo ? <video key={monitorVideo} src={monitorVideo} controls /> : monitorImage ? <img src={monitorImage} alt={selectedClip ? `Plano ${selectedClip.position + 1}: ${selectedClip.visualIntent}` : scene?.title} /> : <div className="monitor-empty"><Image size={28} strokeWidth={1.3} /><span>Quadro ainda não exposto</span></div>}
     </div>
     <div className="scene-meta">

@@ -1,6 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import sharp from "sharp";
 import type { FastifyInstance } from "fastify";
 import { buildApp } from "./app.js";
+import { run } from "./command.js";
 import { repository } from "./db.js";
 import { planSceneClips, splitNarrationForClips, videoModelProfile, videoStatusUrl } from "./providers.js";
 import type { Scene } from "./types.js";
@@ -164,6 +166,8 @@ describe("API local", () => {
         expect(music.json().musicUrl).toMatch(/music\.mp3$/);
       }
       if (action === "images") {
+        const metadata = await sharp(repository.get(id)!.scenes[0].imagePath!).metadata();
+        expect([metadata.width, metadata.height]).toEqual([1080, 1080]);
         const preview = await app.inject({ method: "POST", url: `/api/scenes/${response.json().scenes[0].id}/preview` });
         expect(preview.statusCode).toBe(200);
         expect(preview.json().previewUrl).toMatch(/scene-preview-01\.mp4\?v=/);
@@ -171,6 +175,8 @@ describe("API local", () => {
       if (action === "render") {
         expect(response.json().stage).toBe("done");
         expect(response.json().finalVideoUrl).toMatch(/video-final\.mp4$/);
+        const dimensions = await run("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=s=x:p=0", repository.get(id)!.finalVideoPath!]);
+        expect(dimensions).toBe("1080x1920");
       }
     }
   }, 20_000);

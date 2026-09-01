@@ -69,7 +69,7 @@ export async function buildApp() {
   await app.register(cors, { origin: config.webOrigin });
   await app.register(fastifyStatic, { root: config.dataDir, prefix: "/media/", decorateReply: true });
 
-  app.get("/api/health", async () => ({ ok: true, version: "1.08.01", providers: await providerStatus() }));
+  app.get("/api/health", async () => ({ ok: true, version: "1.09.00", providers: await providerStatus() }));
   app.get("/api/projects", async () => repository.list().map(present));
   app.get<{ Params: { id: string } }>("/api/projects/:id", async (request, reply) => {
     const project = repository.get(request.params.id);

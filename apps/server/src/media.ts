@@ -28,11 +28,22 @@ function srtTime(seconds: number) {
   return `${String(hours).padStart(2,"0")}:${String(minutes).padStart(2,"0")}:${String(secs).padStart(2,"0")},${String(ms).padStart(3,"0")}`;
 }
 
+function assTime(seconds: number) {
+  const centiseconds = Math.max(0, Math.round(seconds * 100));
+  const hours = Math.floor(centiseconds / 360_000);
+  const minutes = Math.floor(centiseconds % 360_000 / 6_000);
+  const secs = Math.floor(centiseconds % 6_000 / 100);
+  const cs = centiseconds % 100;
+  return `${hours}:${String(minutes).padStart(2,"0")}:${String(secs).padStart(2,"0")}.${String(cs).padStart(2,"0")}`;
+}
+
 export async function writeCaptions(project: Project) {
   const dir = await ensureProjectDir(project.id);
-  const destination = path.join(dir, "captions.srt");
+  const verticalEditorial = project.settings.format === "9:16";
+  const destination = path.join(dir, verticalEditorial ? "captions.ass" : "captions.srt");
   let cursor = 0;
   let cueIndex = 1;
+  const cuesWithTime: { index: number; start: number; end: number; text: string }[] = [];
   const maxCharacters = project.settings.format === "9:16" ? 28 : project.settings.format === "1:1" ? 36 : 44;
   const blocks = project.scenes.flatMap((scene) => {
     const duration = scene.duration ?? scene.durationHint;
@@ -45,17 +56,33 @@ export async function writeCaptions(project: Project) {
     }
     if (current) cues.push(current);
     const cueDuration = duration / Math.max(1, cues.length);
-    const sceneBlocks = cues.map((cue, index) => `${cueIndex++}\n${srtTime(cursor + index * cueDuration)} --> ${srtTime(cursor + (index + 1) * cueDuration)}\n${cue}\n`);
+    const sceneBlocks = cues.map((cue, index) => ({ index: cueIndex++, start: cursor + index * cueDuration, end: cursor + (index + 1) * cueDuration, text: cue }));
     cursor += duration;
     return sceneBlocks;
   });
-  await fs.writeFile(destination, blocks.join("\n"), "utf8");
+  cuesWithTime.push(...blocks);
+  if (verticalEditorial) {
+    const header = `[Script Info]\nScriptType: v4.00+\nPlayResX: 1080\nPlayResY: 1920\nWrapStyle: 0\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Vertical,DejaVu Sans,64,&H00FFFFFF,&H00FFFFFF,&H00172227,&H00172227,-1,0,0,0,100,100,0,0,1,4,0,8,96,96,210,1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`;
+    const events = cuesWithTime.map((cue) => `Dialogue: 0,${assTime(cue.start)},${assTime(cue.end)},Vertical,,0,0,0,,${cue.text.replace(/[{}]/g, "")}`).join("\n");
+    await fs.writeFile(destination, `${header}${events}\n`, "utf8");
+  } else {
+    await fs.writeFile(destination, cuesWithTime.map((cue) => `${cue.index}\n${srtTime(cue.start)} --> ${srtTime(cue.end)}\n${cue.text}\n`).join("\n"), "utf8");
+  }
   return destination;
 }
 
 async function renderScene(project: Project, scene: Scene, output: string, fileStem: string) {
   const dir = await ensureProjectDir(project.id);
   const [width, height] = project.settings.format === "9:16" ? [1080, 1920] : project.settings.format === "1:1" ? [1080, 1080] : [1920, 1080];
+  const verticalEditorial = project.settings.format === "9:16";
+  const visualWidth = width;
+  const visualHeight = verticalEditorial ? width : height;
+  const normalizedVisualFilter = verticalEditorial
+    ? `scale=${visualWidth}:${visualHeight}:force_original_aspect_ratio=increase,crop=${visualWidth}:${visualHeight},setsar=1`
+    : `scale=${visualWidth}:${visualHeight}:force_original_aspect_ratio=decrease,pad=${visualWidth}:${visualHeight}:(ow-iw)/2:(oh-ih)/2,setsar=1`;
+  const canvasFilter = verticalEditorial
+    ? `${normalizedVisualFilter},pad=${width}:${height}:0:${height - visualHeight}:color=0x172327,drawbox=x=0:y=${height - visualHeight - 8}:w=${width}:h=8:color=0xB94F2D:t=fill`
+    : normalizedVisualFilter;
   if (!scene.audioPath || (!scene.imagePath && !scene.videoPath && !scene.clips.some((clip) => clip.videoPath))) throw new Error(`A cena “${scene.title}” ainda não possui voz e visual.`);
   const sceneDuration = scene.duration ?? scene.durationHint;
   const readyClips = scene.clips.filter((clip) => clip.videoPath);
@@ -67,7 +94,7 @@ async function renderScene(project: Project, scene: Scene, output: string, fileS
     for (const clip of readyClips) {
       const piece = path.join(dir, `${fileStem}-clip-${clip.position + 1}.mp4`);
       const allocation = sceneDuration * clip.targetDuration / plannedDuration;
-      await run("ffmpeg", ["-y", "-stream_loop", "-1", "-i", clip.videoPath!, "-t", String(allocation), "-vf", `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,setsar=1`, "-an", "-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p", piece]);
+      await run("ffmpeg", ["-y", "-stream_loop", "-1", "-i", clip.videoPath!, "-t", String(allocation), "-vf", normalizedVisualFilter, "-an", "-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "22", "-pix_fmt", "yuv420p", piece]);
       pieces.push(piece);
     }
     const visualList = path.join(dir, `${fileStem}-clips.txt`);
@@ -78,7 +105,7 @@ async function renderScene(project: Project, scene: Scene, output: string, fileS
   else if (readyClips[0]?.videoPath) visual = readyClips[0].videoPath;
   const visualArgs = visual ? ["-stream_loop", "-1", "-i", visual] : ["-loop", "1", "-i", scene.imagePath!];
   await run("ffmpeg", ["-y", ...visualArgs, "-i", scene.audioPath, "-t", String(sceneDuration),
-    "-vf", `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,setsar=1`,
+    "-vf", canvasFilter,
     "-map", "0:v:0", "-map", "1:a:0", "-r", "30", "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
     "-filter:a", `volume=${project.settings.voiceVolume}`, "-c:a", "aac", "-b:a", "160k", "-pix_fmt", "yuv420p", "-shortest", output]);
   return output;
@@ -112,14 +139,14 @@ export async function renderProject(project: Project) {
     await run("ffmpeg", ["-y", "-i", plain, "-stream_loop", "-1", "-i", project.musicPath, "-filter_complex", `[1:a]volume=${project.settings.musicVolume},afade=t=in:st=0:d=1,afade=t=out:st=${fadeStart}:d=2[music];[music][0:a]sidechaincompress=threshold=0.025:ratio=8:attack=20:release=350[ducked];[0:a][ducked]amix=inputs=2:duration=first:normalize=0[aout]`, "-map", "0:v:0", "-map", "[aout]", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-t", String(totalDuration), mixed]);
     mixInput = mixed;
   }
-  const captions = project.captionsPath ?? await writeCaptions(project);
+  const captions = project.settings.format === "9:16" ? await writeCaptions(project) : project.captionsPath ?? await writeCaptions(project);
   const output = path.join(dir, "video-final.mp4");
   if (project.settings.burnCaptions) {
     const escaped = captions.replaceAll("\\", "/").replaceAll(":", "\\:").replaceAll("'", "\\'");
-    const fontSize = project.settings.format === "9:16" ? 30 : project.settings.format === "1:1" ? 27 : 30;
-    const margin = project.settings.format === "9:16" ? 150 : project.settings.format === "1:1" ? 86 : 72;
-    const sideMargin = project.settings.format === "9:16" ? 88 : project.settings.format === "1:1" ? 72 : 96;
-    await run("ffmpeg", ["-y", "-i", mixInput, "-vf", `subtitles='${escaped}':original_size=${width}x${height}:force_style='FontName=DejaVu Sans,FontSize=${fontSize},Bold=1,Spacing=0.2,PrimaryColour=&H00FFFFFF,OutlineColour=&H00172227,BackColour=&H70172227,BorderStyle=3,Outline=2,Shadow=0,Alignment=2,MarginV=${margin},MarginL=${sideMargin},MarginR=${sideMargin}'`, "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-c:a", "copy", output]);
+    const subtitleFilter = project.settings.format === "9:16"
+      ? `subtitles='${escaped}':original_size=${width}x${height}`
+      : `subtitles='${escaped}':original_size=${width}x${height}:force_style='FontName=DejaVu Sans,FontSize=${project.settings.format === "1:1" ? 27 : 30},Bold=1,Spacing=0.2,PrimaryColour=&H00FFFFFF,OutlineColour=&H00172227,BackColour=&H70172227,BorderStyle=3,Outline=2,Shadow=0,Alignment=2,MarginV=${project.settings.format === "1:1" ? 86 : 72},MarginL=${project.settings.format === "1:1" ? 72 : 96},MarginR=${project.settings.format === "1:1" ? 72 : 96}'`;
+    await run("ffmpeg", ["-y", "-i", mixInput, "-vf", subtitleFilter, "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-c:a", "copy", output]);
   } else await fs.copyFile(mixInput, output);
   return { video: output, captions };
 }

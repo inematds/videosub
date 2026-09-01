@@ -51,6 +51,9 @@ export async function createPlan(project: Project) {
     networkAccessEnabled: false,
     workingDirectory: config.workspaceRoot
   });
+  const mediaComposition = project.settings.format === "9:16"
+    ? "cada visualPrompt deve descrever uma composição QUADRADA 1:1 para ocupar o painel inferior de um vídeo vertical; a faixa superior será reservada pelo render local para texto"
+    : `cada visualPrompt deve descrever uma composição ${project.settings.format}`;
   const prompt = `Você é roteirista, editor factual e diretor de vídeos explicativos em português do Brasil.
 
 Transforme a entrada em um roteiro COMPLETO, não apenas repita o texto. A entrada pode ser um artigo pronto ou somente um pedido curto como “explique o que é AGI”.
@@ -63,7 +66,7 @@ Regras obrigatórias:
 - estime durationHint entre 10 e 25 segundos;
 - não invente datas, números, certezas ou previsões; diferencie consenso, hipótese e incerteza;
 - summary deve ser uma sinopse editorial limpa, sem links, citações, observações sobre arquivos, ferramentas ou bastidores;
-- visualPrompt deve estar em inglês, descrever uma única composição cinematográfica ${project.settings.format}, sem palavras, letras, legendas, interfaces, marcas ou logotipos;
+- visualPrompt deve estar em inglês; ${mediaComposition}, sem palavras, letras, legendas, interfaces, marcas ou logotipos;
 - mantenha consistência estética entre cenas: ${project.settings.visualStyle};
 - idioma da narração: ${project.settings.language}.
 
@@ -199,7 +202,7 @@ Regras:
 - escolha pessoas, objetos, processos, lugares, diagramas físicos ou evidências concretas mencionados ou logicamente necessários ao trecho;
 - não use cérebro brilhante, robô genérico, cristal mágico, esfera flutuante ou abstração decorativa, salvo se o texto falar explicitamente disso;
 - nenhum texto, letra, número, interface, marca ou logotipo dentro da imagem;
-- formato ${project.settings.format}: todos os sujeitos anatomicamente em pé, gravidade correta, horizonte nivelado, câmera nunca girada; preserve a área central segura;
+- ${project.settings.format === "9:16" ? "gere cada mídia em composição quadrada 1:1 para o painel inferior do vídeo vertical; não inclua nem reserve texto dentro da imagem" : `formato ${project.settings.format}`}: todos os sujeitos anatomicamente em pé, gravidade correta, horizonte nivelado, câmera nunca girada; preserve a área central segura;
 - descreva movimento natural e estável, sem morphing.
 
 Direção geral da cena (use como contexto, não copie em todos os planos): ${scene.visualPrompt}
@@ -341,16 +344,16 @@ export async function generateVoice(scene: Scene, destination: string, voiceId?:
 }
 
 export async function generateImage(scene: Scene, destination: string, format: Project["settings"]["format"]) {
+  const mediaFormat = format === "9:16" ? "1:1" : format;
   if (config.providers.image === "mock") {
-    const [width, height] = format === "9:16" ? [1080, 1920] : format === "1:1" ? [1080, 1080] : [1920, 1080];
+    const [width, height] = mediaFormat === "1:1" ? [1080, 1080] : [1920, 1080];
     const [paper, ink] = palette(scene.position);
-    const title = scene.title.replace(/[<>&]/g, "");
-    const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="${paper}"/><path d="M0 ${height * .73} L${width} ${height * .52} L${width} ${height} L0 ${height}Z" fill="${ink}" opacity=".16"/><circle cx="${width * .72}" cy="${height * .34}" r="${Math.min(width,height) * .2}" fill="${ink}" opacity=".2"/><text x="${width * .08}" y="${height * .17}" font-family="sans-serif" font-size="${Math.round(width * .055)}" font-weight="700" fill="#172327">${title}</text><text x="${width * .08}" y="${height * .9}" font-family="monospace" font-size="${Math.round(width * .018)}" fill="#172327">VIDEOSUB / FRAME ${String(scene.position + 1).padStart(2,"0")}</text></svg>`;
+    const svg = `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect width="100%" height="100%" fill="${paper}"/><path d="M0 ${height * .73} L${width} ${height * .52} L${width} ${height} L0 ${height}Z" fill="${ink}" opacity=".16"/><circle cx="${width * .72}" cy="${height * .34}" r="${Math.min(width,height) * .2}" fill="${ink}" opacity=".2"/></svg>`;
     await sharp(Buffer.from(svg)).png().toFile(destination);
     return { path: destination };
   }
   requireKey(config.agnes.apiKey, "AGNES_API_KEY");
-  const size = format === "9:16" ? "576x1024" : format === "1:1" ? "1024x1024" : "1024x576";
+  const size = mediaFormat === "1:1" ? "1024x1024" : "1024x576";
   const payload = await fetchJson(`${config.agnes.baseUrl}/v1/images/generations`, {
     method: "POST", headers: { Authorization: `Bearer ${config.agnes.apiKey}`, "content-type": "application/json" },
     body: JSON.stringify({ model: config.agnes.imageModel, prompt: scene.visualPrompt, n: 1, size })
@@ -366,22 +369,23 @@ export async function generateClipImage(scene: Scene, clip: VideoClip, destinati
 }
 
 export async function animateScene(scene: Scene, destination: string, format: Project["settings"]["format"], clip?: Pick<VideoClip, "prompt" | "targetDuration" | "imagePath" | "imageSourceUrl" | "providerJobId">, onSubmitted?: (providerJobId: string) => void) {
+  const mediaFormat = format === "9:16" ? "1:1" : format;
   if (config.providers.video === "mock") {
     const sourceImage = clip?.imagePath ?? scene.imagePath;
     if (!sourceImage) throw new Error("Gere a imagem específica do clipe antes da animação.");
-    const [width, height] = format === "9:16" ? [1080, 1920] : format === "1:1" ? [1080, 1080] : [1920, 1080];
+    const [width, height] = mediaFormat === "1:1" ? [1080, 1080] : [1920, 1080];
     await run("ffmpeg", ["-y", "-loop", "1", "-i", sourceImage, "-t", String(clip?.targetDuration ?? scene.duration ?? scene.durationHint), "-vf", `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2,zoompan=z='min(zoom+0.0006,1.08)':d=1:s=${width}x${height}:fps=30`, "-c:v", "libx264", "-pix_fmt", "yuv420p", destination]);
     return destination;
   }
   requireKey(config.agnes.apiKey, "AGNES_API_KEY");
   const sourceImageUrl = clip?.imageSourceUrl ?? scene.imageSourceUrl;
   if (!sourceImageUrl) throw new Error("A imagem específica deste clipe não possui URL de origem da Agnes. Refazer o movimento recria essa imagem.");
-  const [width, height] = format === "9:16" ? [576, 1024] : format === "1:1" ? [1024, 1024] : [1024, 576];
+  const [width, height] = mediaFormat === "1:1" ? [1024, 1024] : [1024, 576];
   const profile = videoModelProfile();
   const seconds = Math.round(Math.min(profile.maxSeconds, Math.max(profile.minSeconds, clip?.targetDuration ?? config.agnes.videoSeconds)));
   const base = { model: config.agnes.videoModel, prompt: clip?.prompt ?? `${scene.visualPrompt}. Natural subtle motion, stable composition, no morphing, no text.` };
   const requestBody = profile.contract === "seconds"
-    ? { ...base, mode: "keyframe", first_frame: sourceImageUrl, seconds: String(seconds), size: "720P", aspect_ratio: format }
+    ? { ...base, mode: "keyframe", first_frame: sourceImageUrl, seconds: String(seconds), size: "720P", aspect_ratio: mediaFormat }
     : { ...base, image: sourceImageUrl, width, height, num_frames: Math.min(441, Math.max(81, Math.round(seconds * 24 / 8) * 8 + 1)), frame_rate: 24 };
   let videoId = clip?.providerJobId ?? "";
   if (!videoId) {
