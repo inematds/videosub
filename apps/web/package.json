@@ -1,7 +1,7 @@
 {
   "name": "@videosub/web",
   "private": true,
-  "version": "1.08.00",
+  "version": "1.08.01",
   "type": "module",
   "scripts": {
     "dev": "vite",

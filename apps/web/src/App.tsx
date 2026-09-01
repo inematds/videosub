@@ -185,6 +185,8 @@ export default function App() {
   const stageIndex = current ? stages.findIndex((stage) => stage.id === current.stage) : 0;
   const workingScene = current?.scenes.find((item) => item.status === "working" || item.clips.some((clip) => clip.status === "working"));
   const workingClip = workingScene?.clips.find((clip) => clip.status === "working");
+  const totalClips = current?.scenes.reduce((sum, item) => sum + item.clips.length, 0) ?? 0;
+  const completedClips = current?.scenes.reduce((sum, item) => sum + item.clips.filter((clip) => Boolean(clip.videoUrl)).length, 0) ?? 0;
   const progressElapsed = current ? elapsedSince(current.updatedAt) : "0 s";
   const effectiveBusy = busy || current?.status === "working";
   const missingProviders = providers ? [!providers.codex.ready && "Codex", !providers.elevenLabs.ready && "ElevenLabs", !providers.agnes.ready && "Agnes"].filter(Boolean) as string[] : [];
@@ -267,7 +269,7 @@ export default function App() {
           <div className="row-label">ROTEIRO</div>{current.scenes.map((item) => <button key={`${item.id}-script`} aria-pressed={scene?.id === item.id} aria-label={`Revisar roteiro de ${item.title}`} className={`exposure-cell script ${scene?.id === item.id ? "selected" : ""}`} onClick={() => setSelectedScene(item.position)}><p>{item.narration}</p><StatusMark ready /></button>)}
           <div className="row-label">VOZ</div>{current.scenes.map((item) => <button key={`${item.id}-voice`} aria-pressed={scene?.id === item.id} aria-label={`Revisar voz de ${item.title}`} className={`exposure-cell ${scene?.id === item.id ? "selected" : ""}`} onClick={() => setSelectedScene(item.position)}><Mic2 size={17} /><span>{item.audioUrl ? `${(item.duration ?? item.durationHint).toFixed(1)}s` : "aguarda"}</span><StatusMark ready={Boolean(item.audioUrl)} /></button>)}
           <div className="row-label">QUADRO</div>{current.scenes.map((item) => <button key={`${item.id}-image`} aria-pressed={scene?.id === item.id} aria-label={`Revisar imagem de ${item.title}`} className={`exposure-cell image-cell ${scene?.id === item.id ? "selected" : ""}`} onClick={() => setSelectedScene(item.position)}>{item.imageUrl ? <img src={item.imageUrl} alt="" loading="lazy" /> : <Image size={19} />}<StatusMark ready={Boolean(item.imageUrl)} /></button>)}
-          <div className="row-label">CLIP</div>{current.scenes.map((item) => <button key={`${item.id}-motion`} aria-pressed={scene?.id === item.id} aria-label={`Revisar movimento de ${item.title}`} className={`exposure-cell ${scene?.id === item.id ? "selected" : ""}`} onClick={() => setSelectedScene(item.position)}><Clapperboard size={17} /><span>{item.clips.length ? `${item.clips.length} clip${item.clips.length > 1 ? "s" : ""}` : item.videoUrl ? "1 clip" : current.settings.animate ? "aguarda" : "estático"}</span><StatusMark ready={Boolean(item.videoUrl) || !current.settings.animate} /></button>)}
+          <div className="row-label">CLIP</div>{current.scenes.map((item) => { const ready = item.clips.filter((clip) => Boolean(clip.videoUrl)).length; const working = item.clips.some((clip) => clip.status === "working"); const allReady = Boolean(item.clips.length && ready === item.clips.length); return <button key={`${item.id}-motion`} aria-pressed={scene?.id === item.id} aria-label={`Revisar movimento de ${item.title}`} className={`exposure-cell ${scene?.id === item.id ? "selected" : ""}`} onClick={() => setSelectedScene(item.position)}><Clapperboard size={17} /><span>{item.clips.length ? `${ready}/${item.clips.length} clipes` : item.videoUrl ? "1 clipe pronto" : current.settings.animate ? "aguarda" : "estático"}</span><StatusMark ready={allReady || !current.settings.animate} working={working} /></button>; })}
         </div></div>}
       </section>
 
@@ -280,7 +282,7 @@ export default function App() {
       </section>
 
       <footer className="command-bar" aria-live="polite">
-        <div><span>ETAPA ATUAL</span><strong>{stages[stageIndex]?.label}</strong><small>{current.status === "error" ? "Requer atenção" : effectiveBusy ? "Processando no servidor…" : "Pronto para validar"}</small></div>
+        <div className="command-status">{workingClip && workingScene ? <><span>AGNES VIDEO EM EXECUÇÃO</span><strong>Cena {workingScene.position + 1}/{current.scenes.length} · Clipe {workingClip.position + 1}/{workingScene.clips.length}</strong><small>{completedClips} de {totalClips} clipes prontos · {progressElapsed}</small><small className="task-reference">Tarefa {workingClip.providerJobId ?? "aguardando aceite"} · atualização automática</small></> : <><span>ETAPA ATUAL</span><strong>{stages[stageIndex]?.label}</strong><small>{current.status === "error" ? "Requer atenção" : effectiveBusy ? "Processando no servidor…" : "Pronto para validar"}</small></>}</div>
         {current.finalVideoUrl ? <a className="button primary" href={current.finalVideoUrl} download><Download size={17} /> Baixar MP4</a> : next && <button className="button primary next" disabled={effectiveBusy} onClick={() => execute(next.id)}>{effectiveBusy ? <LoaderCircle className="spin" size={17} /> : <ChevronRight size={17} />} {effectiveBusy ? "Executando no servidor…" : next.label}</button>}
       </footer>
     </main>
