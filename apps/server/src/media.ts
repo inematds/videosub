@@ -14,9 +14,14 @@ export async function ensureProjectDir(projectId: string) {
   return dir;
 }
 
-export async function durationOf(file: string) {
-  const output = await run("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", file]);
-  return Number(output);
+export async function durationOf(file: string, requiredStream?: "audio" | "video") {
+  const output = await run("ffprobe", ["-v", "error", "-show_entries", "format=duration:stream=codec_type", "-of", "json", file]);
+  const metadata = JSON.parse(output) as { format?: { duration?: string }; streams?: { codec_type?: string }[] };
+  const duration = Number(metadata.format?.duration);
+  if (!Number.isFinite(duration) || duration <= 0 || !metadata.streams?.some((stream) => requiredStream ? stream.codec_type === requiredStream : stream.codec_type === "audio" || stream.codec_type === "video")) {
+    throw new Error("A mídia não possui duração válida.");
+  }
+  return duration;
 }
 
 function srtTime(seconds: number) {

@@ -70,6 +70,7 @@ db.exec(`
 `);
 db.prepare("UPDATE jobs SET status = 'error', error = 'Processo interrompido pela reinicialização', finished_at = ? WHERE status = 'working'").run(new Date().toISOString());
 db.prepare("UPDATE projects SET status = 'error', error = 'Etapa interrompida pela reinicialização', updated_at = ? WHERE status = 'working'").run(new Date().toISOString());
+db.prepare("UPDATE scenes SET status = 'error', error = COALESCE(error, 'Geração interrompida; pronta para retomar') WHERE status = 'working'").run();
 db.prepare("UPDATE scene_clips SET status = 'error', error = COALESCE(error, 'Geração interrompida; pronta para retomar') WHERE status = 'working'").run();
 const sceneColumns = db.prepare("PRAGMA table_info(scenes)").all() as { name: string }[];
 if (!sceneColumns.some((column) => column.name === "image_source_url")) db.exec("ALTER TABLE scenes ADD COLUMN image_source_url TEXT");

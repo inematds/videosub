@@ -4,6 +4,7 @@ Para instalar e executar o projeto, comece pelo [README principal](../README.md)
 
 ## Documentos atuais
 
+- [Revisão de confiabilidade — 04/09/2026](./REVISAO-2026-09-04.md)
 - [Implementação real por provedor v1.03.00](./IMPLEMENTACAO-v1.03.00.md)
 - [Correções da validação real v1.03.04](./CORRECOES-v1.03.04.md)
 - [Implementação v1.04.04: prompt, trilhas e clipes adaptativos](./IMPLEMENTACAO-v1.04.04.md)

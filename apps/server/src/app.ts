@@ -3,11 +3,25 @@ import path from "node:path";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import fastifyStatic from "@fastify/static";
+import { z } from "zod";
 import { config, mediaUrl } from "./config.js";
 import { repository } from "./db.js";
 import { ensureProjectDir, durationOf, renderProject, renderScenePreview, writeCaptions } from "./media.js";
 import { animateScene, createPlan, createStoryboardClips, editWithPrompt, generateClipImage, generateImage, generateVoice, providerStatus } from "./providers.js";
 import { CreateProjectSchema, ProjectSettingsSchema, PromptEditSchema, RebuildFromSchema, UpdateProjectSchema, UpdateSceneSchema } from "./types.js";
+
+function parseInput<T extends z.ZodType>(schema: T, value: unknown): z.output<T> {
+  const result = schema.safeParse(value);
+  if (!result.success) {
+    const message = result.error.issues.map((issue) => `${issue.path.join(".") || "Dados"}: ${issue.message}`).join("; ");
+    throw Object.assign(new Error(message), { statusCode: 400 });
+  }
+  return result.data;
+}
+
+function requireIdle() {
+  if (repository.hasWorkingJob()) throw Object.assign(new Error("Uma etapa está em execução. Aguarde sua conclusão antes de alterar o projeto."), { statusCode: 409 });
+}
 
 function present(project: NonNullable<ReturnType<typeof repository.get>>) {
   return {
@@ -27,6 +41,7 @@ async function projectAction(id: string, stage: Parameters<typeof repository.upd
   const project = repository.get(id);
   if (!project) throw Object.assign(new Error("Projeto não encontrado."), { statusCode: 404 });
   if (repository.hasWorkingJob()) throw Object.assign(new Error("Já existe uma etapa em execução. Aguarde sua conclusão."), { statusCode: 409 });
+  if (stage !== "plan" && !project.scenes.length) throw Object.assign(new Error("Crie o roteiro antes de executar esta etapa."), { statusCode: 409 });
   const jobId = repository.startJob(id, stage ?? "unknown");
   repository.update(id, { stage, status: "working", error: null });
   try {
@@ -35,6 +50,10 @@ async function projectAction(id: string, stage: Parameters<typeof repository.upd
     return present(repository.update(id, { stage: stage === "render" ? "done" : stage, status: "ready", error: null })!);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    for (const scene of repository.get(id)?.scenes ?? []) {
+      if (scene.status === "working") repository.updateScene(scene.id, { status: "error", error: message });
+      for (const clip of scene.clips) if (clip.status === "working") repository.updateClip(clip.id, { status: "error", error: message });
+    }
     repository.finishJob(jobId, message);
     repository.update(id, { stage, status: "error", error: message });
     throw error;
@@ -59,15 +78,17 @@ export async function buildApp() {
   // Aceita ações POST sem payload enviadas por versões anteriores da interface,
   // que declaravam JSON mesmo com o corpo vazio.
   app.removeContentTypeParser("application/json");
-  app.addContentTypeParser("application/json", { parseAs: "string" }, (_request, body, done) => {
+  const parseJson = app.getDefaultJsonParser("error", "error");
+  app.addContentTypeParser("application/json", { parseAs: "string" }, (request, body, done) => {
     const text = typeof body === "string" ? body : body.toString("utf8");
     if (!text.trim()) return done(null, {});
-    try { done(null, JSON.parse(text)); }
-    catch (error) { done(error as Error); }
+    parseJson(request, text, done);
   });
   for (const contentType of ["audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp4", "audio/ogg"]) app.addContentTypeParser(contentType, { parseAs: "buffer" }, (_request, body, done) => done(null, body));
   await app.register(cors, { origin: config.webOrigin });
-  await app.register(fastifyStatic, { root: config.dataDir, prefix: "/media/", decorateReply: true });
+  const mediaRoot = path.join(config.dataDir, "projects");
+  await fs.promises.mkdir(mediaRoot, { recursive: true });
+  await app.register(fastifyStatic, { root: mediaRoot, prefix: "/media/projects/", decorateReply: false });
 
   app.get("/api/health", async () => ({ ok: true, version: "1.09.00", providers: await providerStatus() }));
   app.get("/api/projects", async () => repository.list().map(present));
@@ -76,34 +97,58 @@ export async function buildApp() {
     return project ? present(project) : reply.code(404).send({ error: "Projeto não encontrado." });
   });
   app.post("/api/projects", async (request, reply) => {
-    const input = CreateProjectSchema.parse(request.body);
+    const input = parseInput(CreateProjectSchema, request.body);
     const settings = ProjectSettingsSchema.parse(input.settings ?? {});
     return reply.code(201).send(present(repository.create({ title: input.title, content: input.content, settings })));
   });
   app.patch<{ Params: { id: string } }>("/api/projects/:id", async (request, reply) => {
+    requireIdle();
     const current = repository.get(request.params.id);
     if (!current) return reply.code(404).send({ error: "Projeto não encontrado." });
-    const input = UpdateProjectSchema.parse(request.body);
+    const input = parseInput(UpdateProjectSchema, request.body);
     const settings = input.settings ? ProjectSettingsSchema.parse({ ...current.settings, ...input.settings }) : current.settings;
-    return present(repository.update(current.id, { ...input, settings })!);
+    const planChanged = (input.content !== undefined && input.content !== current.content) || settings.language !== current.settings.language || settings.visualStyle !== current.settings.visualStyle;
+    const voiceChanged = settings.voiceId !== current.settings.voiceId;
+    const formatChanged = settings.format !== current.settings.format;
+    const clipsChanged = voiceChanged || formatChanged || settings.clipStrategy !== current.settings.clipStrategy;
+    const settingsChanged = JSON.stringify(settings) !== JSON.stringify(current.settings);
+    const nextStage = planChanged || !current.scenes.length ? "content"
+      : voiceChanged ? "voice" : formatChanged ? "image" : clipsChanged ? "storyboard" : "render";
+    if (planChanged) repository.replaceScenes(current.id, []);
+    else for (const scene of current.scenes) {
+      if (voiceChanged) repository.updateScene(scene.id, { audioPath: null, duration: null });
+      if (formatChanged) repository.updateScene(scene.id, { imagePath: null, imageSourceUrl: null });
+      if (clipsChanged) {
+        repository.clearClips(scene.id);
+        repository.updateScene(scene.id, { videoPath: null });
+      }
+    }
+    return present(repository.update(current.id, { ...input, settings,
+      ...(planChanged ? { summary: "", lastPromptEdit: null } : {}),
+      ...(planChanged || voiceChanged || formatChanged ? { captionsPath: null } : {}),
+      ...(planChanged || settingsChanged ? { finalVideoPath: null, status: "ready" as const, error: null, stage: nextStage } : {})
+    })!);
   });
   app.patch<{ Params: { sceneId: string } }>("/api/scenes/:sceneId", async (request, reply) => {
     if (repository.hasWorkingJob()) return reply.code(409).send({ error: "Uma etapa está em execução. Aguarde antes de editar." });
     const { project, scene } = findScene(request.params.sceneId);
     if (!project || !scene) return reply.code(404).send({ error: "Cena não encontrada." });
-    const input = UpdateSceneSchema.parse(request.body);
-    const narrationChanged = input.narration !== undefined || input.durationHint !== undefined;
-    const visualChanged = input.visualPrompt !== undefined;
+    const input = parseInput(UpdateSceneSchema, request.body);
+    const narrationChanged = (input.narration !== undefined && input.narration !== scene.narration) || (input.durationHint !== undefined && input.durationHint !== scene.durationHint);
+    const visualChanged = input.visualPrompt !== undefined && input.visualPrompt !== scene.visualPrompt;
     repository.updateScene(scene.id, {
       ...input,
       ...(narrationChanged ? { audioPath: null, videoPath: null, duration: null } : {}),
       ...(visualChanged ? { imagePath: null, imageSourceUrl: null, videoPath: null } : {})
     });
     if (narrationChanged || visualChanged) repository.clearClips(scene.id);
-    repository.update(project.id, { finalVideoPath: null, ...(narrationChanged ? { captionsPath: null } : {}), stage: "plan", status: "ready" });
+    repository.update(project.id, narrationChanged || visualChanged
+      ? { finalVideoPath: null, ...(narrationChanged ? { captionsPath: null } : {}), stage: "plan", status: "ready", error: null }
+      : {});
     return present(repository.get(project.id)!);
   });
   app.delete<{ Params: { id: string } }>("/api/projects/:id", async (request, reply) => {
+    requireIdle();
     const removed = repository.delete(request.params.id);
     return removed ? reply.code(204).send() : reply.code(404).send({ error: "Projeto não encontrado." });
   });
@@ -112,7 +157,7 @@ export async function buildApp() {
     const project = repository.get(request.params.id);
     if (!project) return reply.code(404).send({ error: "Projeto não encontrado." });
     if (repository.hasWorkingJob()) return reply.code(409).send({ error: "Uma etapa está em execução. Aguarde antes de refazer uma camada." });
-    const { stage } = RebuildFromSchema.parse(request.body);
+    const { stage } = parseInput(RebuildFromSchema, request.body);
     const stageOrder = ["plan", "voice", "image", "storyboard", "motion", "captions", "render"] as const;
     const from = stageOrder.indexOf(stage);
     if (stage === "plan") return present(repository.update(project.id, { stage: "plan", status: "ready", error: null })!);
@@ -146,7 +191,7 @@ export async function buildApp() {
   app.post<{ Params: { id: string } }>("/api/projects/:id/edit-prompt", async (request, reply) => {
     const current = repository.get(request.params.id);
     if (!current) return reply.code(404).send({ error: "Projeto não encontrado." });
-    const input = PromptEditSchema.parse(request.body);
+    const input = parseInput(PromptEditSchema, request.body);
     const target = input.scope === "scene" ? current.scenes.find((item) => item.id === input.sceneId) : undefined;
     if (input.scope === "scene" && !target) return reply.code(404).send({ error: "Cena não encontrada." });
     const startedAt = new Date();
@@ -175,17 +220,30 @@ export async function buildApp() {
   });
 
   app.post<{ Params: { id: string }; Body: Buffer }>("/api/projects/:id/music", async (request, reply) => {
+    requireIdle();
     const project = repository.get(request.params.id);
     if (!project) return reply.code(404).send({ error: "Projeto não encontrado." });
     if (!Buffer.isBuffer(request.body) || request.body.length < 1000) return reply.code(400).send({ error: "Envie um arquivo de música válido." });
     const extension = request.headers["content-type"]?.includes("wav") ? "wav" : request.headers["content-type"]?.includes("ogg") ? "ogg" : request.headers["content-type"]?.includes("mp4") ? "m4a" : "mp3";
-    const destination = path.join(await ensureProjectDir(project.id), `music.${extension}`);
-    await fs.promises.writeFile(destination, request.body);
-    let duration: number;
-    try { duration = await durationOf(destination); } catch { return reply.code(400).send({ error: "O arquivo enviado não contém áudio reconhecível." }); }
-    return present(repository.update(project.id, { musicPath: destination, musicDuration: duration, finalVideoPath: null })!);
+    const jobId = repository.startJob(project.id, "music-upload");
+    let destination: string | undefined;
+    try {
+      destination = path.join(await ensureProjectDir(project.id), `music-${crypto.randomUUID()}.${extension}`);
+      await fs.promises.writeFile(destination, request.body);
+      let duration: number;
+      try { duration = await durationOf(destination, "audio"); }
+      catch { throw Object.assign(new Error("O arquivo enviado não contém áudio reconhecível."), { statusCode: 400 }); }
+      const updated = repository.update(project.id, { musicPath: destination, musicDuration: duration, finalVideoPath: null })!;
+      repository.finishJob(jobId);
+      return present(updated);
+    } catch (error) {
+      repository.finishJob(jobId, error instanceof Error ? error.message : String(error));
+      if (destination) await fs.promises.rm(destination, { force: true });
+      throw error;
+    }
   });
   app.delete<{ Params: { id: string } }>("/api/projects/:id/music", async (request, reply) => {
+    requireIdle();
     const project = repository.get(request.params.id);
     if (!project) return reply.code(404).send({ error: "Projeto não encontrado." });
     return present(repository.update(project.id, { musicPath: null, musicDuration: null, finalVideoPath: null })!);
@@ -252,9 +310,10 @@ export async function buildApp() {
     for (const scene of project.scenes) {
       if (!scene.audioPath || !scene.duration) throw Object.assign(new Error(`Gere a voz de “${scene.title}” antes do storyboard.`), { statusCode: 409 });
       if (scene.clips.length && scene.clips.every((clip) => clip.imagePath)) continue;
-      const clips = await createStoryboardClips(project, scene);
-      repository.replaceClips(scene.id, clips);
+      const clips = scene.clips.length ? scene.clips : await createStoryboardClips(project, scene);
+      if (!scene.clips.length) repository.replaceClips(scene.id, clips);
       for (const clip of clips) {
+        if (clip.imagePath) continue;
         const destination = path.join(dir, `clip-frame-${String(scene.position + 1).padStart(2,"0")}-${String(clip.position + 1).padStart(2,"0")}.png`);
         repository.updateClip(clip.id, { status: "working", error: null });
         repository.touch(project.id);
@@ -396,7 +455,7 @@ export async function buildApp() {
 
   app.post<{ Params: { id: string } }>("/api/projects/:id/captions", async (request) => projectAction(request.params.id, "captions", async (project) => {
     const captionsPath = await writeCaptions(project);
-    repository.update(project.id, { captionsPath });
+    repository.update(project.id, { captionsPath, finalVideoPath: null });
   }));
 
   app.post<{ Params: { id: string } }>("/api/projects/:id/render", async (request) => projectAction(request.params.id, "render", async (project) => {
@@ -406,7 +465,7 @@ export async function buildApp() {
 
   const webDist = path.join(config.workspaceRoot, "apps/web/dist");
   if (fs.existsSync(webDist)) {
-    await app.register(fastifyStatic, { root: webDist, decorateReply: false });
+    await app.register(fastifyStatic, { root: webDist });
     app.setNotFoundHandler((request, reply) => request.url.startsWith("/api/") || request.url.startsWith("/media/")
       ? reply.code(404).send({ error: "Rota não encontrada." })
       : reply.sendFile("index.html"));
