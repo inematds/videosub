@@ -1,5 +1,7 @@
 # VideoSub local
 
+**🇧🇷 [Português](README.md) · 🇺🇸 [English](README.en.md) · 🇪🇸 [Español](README.es.md)**
+
 MVP local que transforma conteúdo escrito em um vídeo MP4, mantendo cada etapa visível para revisão: roteiro, voz, imagens, movimento opcional, legendas e render.
 
 ## 📖 Guia de uso

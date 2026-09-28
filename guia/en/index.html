@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>VideoSub — Conteúdo em vídeo, etapa por etapa</title>
-<meta content="Sistema local que transforma um tema ou conteúdo em roteiro, voz, imagens, animações, legendas e vídeo MP4 com validação por etapa." name="description"/>
+<title>VideoSub — Video content, step by step</title>
+<meta content="A local system that turns a topic or content into a script, voice, images, animations, captions, and an MP4 video, with validation at each stage." name="description"/>
 <link href="https://fonts.googleapis.com" rel="preconnect"/>
 <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap" rel="stylesheet"/>
@@ -36,51 +36,51 @@
   footer{padding:46px 0;text-align:center;color:var(--mut);font-size:.9rem}.pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:.3em .8em;font-size:.78rem;color:var(--mut);margin:0 4px}
 </style>
 <link href="https://inematds.github.io/videosub/guia/" hreflang="pt-BR" rel="alternate"/><link href="https://inematds.github.io/videosub/guia/en/" hreflang="en" rel="alternate"/><link href="https://inematds.github.io/videosub/guia/es/" hreflang="es" rel="alternate"/></head>
-<body><div class="inema-lang" style="position:fixed;right:14px;bottom:14px;z-index:9999;display:flex;gap:2px;padding:4px;border-radius:10px;background:rgba(12,12,16,.82);border:1px solid rgba(226,162,59,.45);font:600 12px/1 Sora,Inter,system-ui,sans-serif;backdrop-filter:blur(8px)" translate="no"><a href="./" hreflang="pt-BR" style="padding:6px 8px;border-radius:7px;text-decoration:none;color:#1a1206;background:#E2A23B">PT</a><a href="en/" hreflang="en" style="padding:6px 8px;border-radius:7px;text-decoration:none;color:#e9e9ee">EN</a><a href="es/" hreflang="es" style="padding:6px 8px;border-radius:7px;text-decoration:none;color:#e9e9ee">ES</a></div>
+<body><div class="inema-lang" style="position:fixed;right:14px;bottom:14px;z-index:9999;display:flex;gap:2px;padding:4px;border-radius:10px;background:rgba(12,12,16,.82);border:1px solid rgba(226,162,59,.45);font:600 12px/1 Sora,Inter,system-ui,sans-serif;backdrop-filter:blur(8px)" translate="no"><a href="../" hreflang="pt-BR" style="padding:6px 8px;border-radius:7px;text-decoration:none;color:#e9e9ee">PT</a><a href="./" hreflang="en" style="padding:6px 8px;border-radius:7px;text-decoration:none;color:#1a1206;background:#E2A23B">EN</a><a href="../es/" hreflang="es" style="padding:6px 8px;border-radius:7px;text-decoration:none;color:#e9e9ee">ES</a></div>
 <nav><div class="wrap">
 <a class="brand" href="#top"><span class="emoji">🎬</span> VideoSub</a><span class="sep">|</span>
 <span class="clubpro"><a class="inema" href="https://inema.club" rel="noopener" target="_blank">INEMA.CLUB</a><span class="sep">-</span><a class="pro" href="https://inema.pro" rel="noopener" target="_blank">PRO</a></span>
-<div class="links"><a class="sec" href="#oque">O que é</a><a class="sec" href="#fluxo">Como funciona</a><a class="sec" href="#guia">Guia de uso</a><a class="sec" href="#exemplos">Exemplos</a><a class="sec" href="#roadmap">Roadmap</a><button aria-label="Alternar tema" class="tgl" id="themeToggle" title="Alternar tema">🌙</button><a class="btn" href="https://github.com/inematds/videosub" rel="noopener" target="_blank">GitHub</a></div>
+<div class="links"><a class="sec" href="#oque">What it is</a><a class="sec" href="#fluxo">How it works</a><a class="sec" href="#guia">User guide</a><a class="sec" href="#exemplos">Examples</a><a class="sec" href="#roadmap">Roadmap</a><button aria-label="Toggle theme" class="tgl" id="themeToggle" title="Toggle theme">🌙</button><a class="btn" href="https://github.com/inematds/videosub" rel="noopener" target="_blank">GitHub</a></div>
 </div></nav>
 <header class="hero" id="top"><div class="glow"></div><div class="wrap"><div>
-<span class="chip">Produção de vídeo com IA · local</span>
-<h1>Do conteúdo ao <span class="amb">vídeo pronto</span></h1>
-<p class="lead">Crie roteiro, voz, imagens, animações, legendas e MP4 em um fluxo visual que permite revisar cada etapa.</p>
-<div class="cta"><a class="btn" href="#guia">Começar o guia</a><a class="btn ghost" href="https://github.com/inematds/videosub" rel="noopener" target="_blank">Ver no GitHub</a></div>
-</div><figure><img alt="Linha de produção visual conectando cenas de um vídeo" src="assets/hero.png"/></figure></div></header>
-<section id="oque"><div class="wrap"><span class="chip">O que é</span><h2>Um estúdio local e verificável</h2><p class="sub">VideoSub transforma um tema curto ou conteúdo completo em vídeo vertical, quadrado ou horizontal, mantendo o operador no controle do resultado.</p>
-<div class="grid g3"><div class="card"><h3>🧭 Etapas visíveis</h3><p>Roteiro, voz, imagem, movimento, legenda e render aparecem separadamente para revisão.</p></div><div class="card"><h3>🔌 Provedores reais</h3><p>Codex OAuth cria o roteiro, ElevenLabs produz a voz e Agnes gera imagens e vídeos.</p></div><div class="card"><h3>🏠 Execução local</h3><p>Interface e API rodam na máquina, com SQLite para projetos e FFmpeg para a montagem final.</p></div></div></div></section>
-<section id="fluxo"><div class="wrap"><span class="chip">Como funciona</span><h2>Uma linha de produção em sete passos</h2><p class="sub">Cada saída é preservada no projeto e pode ser revisada antes da próxima operação.</p><div class="flow"><span>Conteúdo</span><span class="arr">→</span><span>Roteiro</span><span class="arr">→</span><span>Voz</span><span class="arr">→</span><span>Imagens</span><span class="arr">→</span><span>Animação</span><span class="arr">→</span><span>Legendas</span><span class="arr">→</span><span>MP4</span></div></div></section>
-<section id="pre"><div class="wrap"><span class="chip">Pré-requisitos</span><h2>O necessário para rodar</h2><p class="sub">A aplicação usa ferramentas locais e credenciais configuradas em arquivo não versionado.</p><div class="grid g3">
-<div class="card"><h3>Node.js e pnpm</h3><p>Node.js 22 ou superior e pnpm 10.</p><pre><span class="k">node</span> --version
+<span class="chip">AI video production · local</span>
+<h1>From content to <span class="amb">video ready</span></h1>
+<p class="lead">Create a script, voice, images, animations, captions, and an MP4 in a visual workflow that lets you review each step.</p>
+<div class="cta"><a class="btn" href="#guia">Start the guide</a><a class="btn ghost" href="https://github.com/inematds/videosub" rel="noopener" target="_blank">View on GitHub</a></div>
+</div><figure><img alt="Visual production line connecting the scenes of a video" src="../assets/hero.png"/></figure></div></header>
+<section id="oque"><div class="wrap"><span class="chip">What it is</span><h2>A local, verifiable studio</h2><p class="sub">VideoSub turns a short topic or complete content into a vertical, square, or horizontal video, keeping you in control of the result.</p>
+<div class="grid g3"><div class="card"><h3>🧭 Visible steps</h3><p>Script, voice, image, motion, captions, and render are shown separately for review.</p></div><div class="card"><h3>🔌 Real providers</h3><p>Codex OAuth creates the script, ElevenLabs produces the voice, and Agnes generates images and videos.</p></div><div class="card"><h3>🏠 Local execution</h3><p>The interface and API run on your machine, with SQLite for projects and FFmpeg for final assembly.</p></div></div></div></section>
+<section id="fluxo"><div class="wrap"><span class="chip">How it works</span><h2>A seven-step production line</h2><p class="sub">Each output is preserved in the project and can be reviewed before the next operation.</p><div class="flow"><span>Content</span><span class="arr">→</span><span>Script</span><span class="arr">→</span><span>Voice</span><span class="arr">→</span><span>Images</span><span class="arr">→</span><span>Animation</span><span class="arr">→</span><span>Captions</span><span class="arr">→</span><span>MP4</span></div></div></section>
+<section id="pre"><div class="wrap"><span class="chip">Prerequisites</span><h2>What you need to run it</h2><p class="sub">The application uses local tools and credentials configured in an untracked file.</p><div class="grid g3">
+<div class="card"><h3>Node.js and pnpm</h3><p>Node.js 22 or later and pnpm 10.</p><pre><span class="k">node</span> --version
 <span class="k">pnpm</span> --version</pre></div>
-<div class="card"><h3>FFmpeg</h3><p>FFmpeg e FFprobe disponíveis no PATH, incluindo o filtro subtitles.</p><pre><span class="k">ffmpeg</span> -version
+<div class="card"><h3>FFmpeg</h3><p>FFmpeg and FFprobe available on the PATH, including the subtitles filter.</p><pre><span class="k">ffmpeg</span> -version
 <span class="k">ffprobe</span> -version</pre></div>
-<div class="card"><h3>Provedores</h3><p>Codex autenticado e chaves de Agnes e ElevenLabs no ambiente local.</p><pre><span class="k">codex</span> login status
+<div class="card"><h3>Providers</h3><p>Codex authenticated, with Agnes and ElevenLabs keys in the local environment.</p><pre><span class="k">codex</span> login status
 <span class="c"># configure apps/server/.env</span></pre></div>
 </div></div></section>
-<section id="guia"><div class="wrap"><span class="chip">Guia de uso · passo a passo</span><h2>Execute e produza o primeiro vídeo</h2><p class="sub">Os comandos abaixo são os mesmos usados na versão local do projeto.</p>
-<div class="step"><div class="b">1</div><div><h3>Instale as dependências</h3><p>Na raiz do repositório, instale o workspace.</p><pre><span class="k">pnpm</span> install --frozen-lockfile</pre></div></div>
-<div class="step"><div class="b">2</div><div><h3>Crie a configuração local</h3><p>Copie o modelo e preencha as credenciais sem versionar o arquivo.</p><pre><span class="k">cp</span> .env.example apps/server/.env
+<section id="guia"><div class="wrap"><span class="chip">User guide · step by step</span><h2>Run it and produce the first video</h2><p class="sub">The commands below are the same ones used in the local version of the project.</p>
+<div class="step"><div class="b">1</div><div><h3>Install the dependencies</h3><p>At the repository root, install the workspace.</p><pre><span class="k">pnpm</span> install --frozen-lockfile</pre></div></div>
+<div class="step"><div class="b">2</div><div><h3>Create the local configuration</h3><p>Copy the template and fill in the credentials without versioning the file.</p><pre><span class="k">cp</span> .env.example apps/server/.env
 <span class="k">nano</span> apps/server/.env</pre></div></div>
-<div class="step"><div class="b">3</div><div><h3>Compile e inicie</h3><p>O script cria o build quando necessário e publica a interface na porta 3333.</p><pre><span class="k">pnpm</span> build
+<div class="step"><div class="b">3</div><div><h3>Build and start</h3><p>The script creates the build when needed and serves the interface on port 3333.</p><pre><span class="k">pnpm</span> build
 <span class="k">./start.sh</span>
-<span class="c"># abra http://localhost:3333</span></pre></div></div>
-<div class="step"><div class="b">4</div><div><h3>Crie um projeto</h3><p>Informe o tema ou conteúdo, escolha formato e estilo e gere o roteiro.</p><pre><span class="s">Tema:</span> explique o que é AGI
+<span class="c"># open http://localhost:3333</span></pre></div></div>
+<div class="step"><div class="b">4</div><div><h3>Create a project</h3><p>Enter a topic or content, choose a format and style, and generate the script.</p><pre><span class="s">Tema:</span> explique o que é AGI
 <span class="s">Formato:</span> 9:16
 <span class="s">Estilo:</span> editorial cinematográfico</pre></div></div>
-<div class="step"><div class="b">5</div><div><h3>Valide cada etapa</h3><p>Gere voz, imagens e animações; revise as cenas e só depois crie legendas e renderize.</p><pre><span class="c"># fluxo na interface</span>
+<div class="step"><div class="b">5</div><div><h3>Validate each stage</h3><p>Generate voice, images, and animations; review the scenes, then create captions and render.</p><pre><span class="c"># interface workflow</span>
 Roteiro → Voz → Imagens → Animar → Legendas → Renderizar</pre></div></div>
-<div class="step"><div class="b">6</div><div><h3>Atualize ou encerre</h3><p>Use os scripts operacionais incluídos no repositório.</p><pre><span class="k">./atualiza.sh</span>  <span class="c"># valida, compila e reinicia</span>
-<span class="k">./stop.sh</span>      <span class="c"># encerra o servidor</span></pre></div></div>
+<div class="step"><div class="b">6</div><div><h3>Update or stop</h3><p>Use the operational scripts included in the repository.</p><pre><span class="k">./atualiza.sh</span>  <span class="c"># validate, build, and restart</span>
+<span class="k">./stop.sh</span>      <span class="c"># stop the server</span></pre></div></div>
 </div></section>
-<section id="exemplos"><div class="wrap"><span class="chip">Exemplo real</span><h2>Vídeo explicativo sobre AGI</h2><p class="sub">Quadros do resultado validado ponta a ponta com voz ElevenLabs, imagens e movimento Agnes e montagem local.</p><div class="ex"><figure><img alt="Cena vertical com cérebro artificial" src="assets/ex1.jpg"/><figcaption>Abertura cinematográfica gerada para explicar o conceito de AGI.</figcaption></figure><figure><img alt="Cena vertical sobre impactos da inteligência artificial" src="assets/ex2.jpg"/><figcaption>Cena final com legenda compacta e composição azul e âmbar.</figcaption></figure></div></div></section>
-<section id="roadmap"><div class="wrap"><span class="chip">Roadmap</span><h2>Do MVP ao produto completo</h2><p class="sub">A base atual prioriza produção real e validação local; as próximas fases ampliam operação e acabamento.</p>
-<div class="phase"><div class="tag">ATUAL</div><div class="d"><strong>Pipeline real local</strong><span>Roteiro, voz, imagens, vídeo, legendas e render final com diagnóstico de provedores.</span></div></div>
-<div class="phase"><div class="tag">PRÓXIMO</div><div class="d"><strong>Controles criativos</strong><span>Mais estilos, vozes, música com mixagem, templates de legenda e ajustes por cena.</span></div></div>
-<div class="phase"><div class="tag">FUTURO</div><div class="d"><strong>Operação multiusuário</strong><span>Autenticação, fila de trabalhos, armazenamento externo, publicação e acompanhamento de custos.</span></div></div>
+<section id="exemplos"><div class="wrap"><span class="chip">Real example</span><h2>Explainer video about AGI</h2><p class="sub">Frames from the end-to-end validated result with ElevenLabs voice, Agnes images and motion, and local editing.</p><div class="ex"><figure><img alt="Vertical scene with an artificial brain" src="../assets/ex1.jpg"/><figcaption>Cinematic opening generated to explain the concept of AGI.</figcaption></figure><figure><img alt="Vertical scene about the impacts of artificial intelligence" src="../assets/ex2.jpg"/><figcaption>Final scene with compact captions and a blue-and-amber composition.</figcaption></figure></div></div></section>
+<section id="roadmap"><div class="wrap"><span class="chip">Roadmap</span><h2>From MVP to complete product</h2><p class="sub">The current setup prioritizes real production and local validation; the next phases expand operations and polish.</p>
+<div class="phase"><div class="tag">CURRENT</div><div class="d"><strong>Real local pipeline</strong><span>Script, voice, images, video, captions, and final render with provider diagnostics.</span></div></div>
+<div class="phase"><div class="tag">NEXT</div><div class="d"><strong>Creative controls</strong><span>More styles, voices, music mixing, caption templates, and per-scene adjustments.</span></div></div>
+<div class="phase"><div class="tag">FUTURE</div><div class="d"><strong>Multiuser operation</strong><span>Authentication, job queue, external storage, publishing, and cost tracking.</span></div></div>
 </div></section>
-<footer><div class="wrap"><div class="pill">React</div><div class="pill">Fastify</div><div class="pill">SQLite</div><div class="pill">FFmpeg</div><p style="margin-top:18px">VideoSub · versão v1.09.00 · <a href="https://github.com/inematds/videosub">inematds/videosub</a> · <a href="https://inema.club">INEMA.CLUB</a></p></div></footer>
+<footer><div class="wrap"><div class="pill">React</div><div class="pill">Fastify</div><div class="pill">SQLite</div><div class="pill">FFmpeg</div><p style="margin-top:18px">VideoSub · version v1.09.00 · <a href="https://github.com/inematds/videosub">inematds/videosub</a> · <a href="https://inema.club">INEMA.CLUB</a></p></div></footer>
 <script>(function(){var KEY='videosub-theme',b=document.body,t=document.getElementById('themeToggle');if(localStorage.getItem(KEY)==='light'){b.classList.add('light');t.textContent='☀️'}t.addEventListener('click',function(){var light=b.classList.toggle('light');t.textContent=light?'☀️':'🌙';localStorage.setItem(KEY,light?'light':'dark')})})();</script>
 </body>
 </html>
